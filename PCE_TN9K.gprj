@@ -1,0 +1,30 @@
+<?xml version="1" encoding="UTF-8"?>
+<!DOCTYPE gowin-fpga-project>
+<Project>
+    <Template>FPGA</Template>
+    <Version>5</Version>
+    <Device name="GW1NR-9C" pn="GW1NR-LV9QN88PC6/I5">gw1nr9c-004</Device>
+    <FileList>
+        <File path="src/board/gw_rpll.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/memory/psram_burst.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/pce/sdp_ram.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/pce/huc6280.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/pce/rom_cache.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/pce/cpu_sys.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/pce/vdc.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/pce/vce.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/pce/cart.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/pce/psg.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/pce/pce_core.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/board/hdmi/hdmi_impl.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/board/hdmi/hdmi_module.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/board/hdmi/tmds_encoder_2.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/debug/uart_tx.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/debug/uart_report.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/board/pce_top.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/board/menu_rom.v" type="file.verilog" enable="1"/>
+        <File path="src/board/pce2hdmi.v" type="file.verilog" enable="1"/>
+        <File path="src/board/pce_tn9k.cst" type="file.cst" enable="1"/>
+        <File path="src/board/pce_tn9k.sdc" type="file.sdc" enable="1"/>
+    </FileList>
+</Project>
