@@ -42,16 +42,16 @@ architecture rtl of pce_top is
       waddr : in std_logic_vector(10 downto 0);
       wdata : in std_logic_vector(8 downto 0);
       div   : in std_logic_vector(1 downto 0);
-      frame_t, clk_pix : in std_logic;
+      clk_pix : in std_logic;
       r, g, b : out std_logic_vector(7 downto 0);
-      hs, vs, de, locked : out std_logic);
+      hs, vs, de, line_t, line_f : out std_logic;
+      h_tx, v_tx : out std_logic_vector(9 downto 0));
   end component;
   signal memclk, memclk_p, clk, lock_s, clk135, clk_pix, lock_h, lock_h1 : std_logic;
   signal porp : unsigned(9 downto 0) := (others => '0');
   signal por  : unsigned(9 downto 0) := (others => '0');
   signal rstn, pore : std_logic := '0';
   signal s1   : std_logic_vector(1 downto 0) := "00";
-  signal prst : std_logic_vector(3 downto 0) := "1111";
   -- die 0 mode (memclk): fixed latency in the menu (loading), variable in the game
   type lst_t is (L_RST, L_BOOT, L_INIT, L_RUN);
   signal l    : lst_t := L_RST;
@@ -73,18 +73,21 @@ architecture rtl of pce_top is
   signal pad, p0, p1 : std_logic_vector(7 downto 0) := (others => '0');   -- active high: run sel II I left down right up
   signal k    : std_logic_vector(3 downto 0);
   signal po   : std_logic_vector(1 downto 0);
-  signal pix_we, frame_t, locked : std_logic;
+  signal pix_we, frame_t, locked, line_t, line_f : std_logic;
   signal pix_a : std_logic_vector(10 downto 0);
   signal pix_c : std_logic_vector(8 downto 0);
   signal pix_d : std_logic_vector(1 downto 0);
   signal r, g, b : std_logic_vector(7 downto 0);
-  signal hs, vs, de : std_logic;
+  signal hs, vs, de, audio_req : std_logic;
+  signal h_tx, v_tx, tq0, tq1, tq2 : std_logic_vector(9 downto 0);
+  signal haudio : std_logic_vector(31 downto 0);
   -- debug: last values written to $0801 / $0802 by the test program, cache misses
   signal psg_cs, b_wr, miss : std_logic;
   signal b_addr : std_logic_vector(9 downto 0);
   signal b_dout, dbg1, dbg2 : std_logic_vector(7 downto 0) := x"00";
   signal nmiss : unsigned(15 downto 0) := (others => '0');
   signal lk : std_logic_vector(1 downto 0) := "00";
+  signal vdbg : std_logic_vector(31 downto 0);
   signal al, ar : signed(15 downto 0);
   signal ul, ur : unsigned(15 downto 0) := x"8000";
   signal dl, dr : unsigned(16 downto 0) := (others => '0');
@@ -111,11 +114,6 @@ begin
       elsif por(9) = '0' then if pore = '1' then por <= por + 1; end if;
       else rstn <= '1'; end if;
     end if;
-  end process;
-  process(clk_pix, lock_h)
-  begin
-    if lock_h = '0' then prst <= "1111";
-    elsif rising_edge(clk_pix) then prst <= prst(2 downto 0) & '0'; end if;
   end process;
 
   process(memclk)
@@ -174,19 +172,23 @@ begin
     port map (clk => clk, hard => hard, to_menu => to_menu, mem_rdy => run2, menu => menu, loading => loading,
       sd_sck => sd_sck, sd_cmd => sd_cmd, sd_cs => sd_cs, sd_dat0 => sd_dat0, pw_t => pw_t, pw_a => pw_a, pw_d => pw_d,
       memclk => memclk, pad => k, pad_o => po, psg_cs => psg_cs, b_wr => b_wr, b_addr => b_addr, b_dout => b_dout, audio_l => al, audio_r => ar,
-      pix_we => pix_we, pix_addr => pix_a, pix_color => pix_c, pix_div => pix_d, frame_t => frame_t, miss => miss,
+      pix_we => pix_we, pix_addr => pix_a, pix_color => pix_c, pix_div => pix_d, frame_t => frame_t, line_t => line_t, line_f => line_f, locked => locked, miss => miss, dbg => vdbg,
       p0_read => r0, p0_addr => a0, p0_len => l0, p0_dout => q0, p0_rvalid => v0, p0_busy => b0,
       p1_read => r1, p1_write => w1, p1_addr => a1, p1_len => l1, p1_din => d1, p1_dout => q1,
       p1_rvalid => v1, p1_busy => b1);
 
   u_v2h : pce2hdmi port map (clk => clk, we => pix_we, waddr => pix_a, wdata => pix_c, div => pix_d,
-    frame_t => frame_t, clk_pix => clk_pix, r => r, g => g, b => b, hs => hs, vs => vs, de => de, locked => locked);
-  u_hdmi : entity work.hdmi_module
-    port map (vga_clk_x5 => clk135, vga_clk => clk_pix, rst => prst(3),
-      vga_red_in => r, vga_green_in => g, vga_blue_in => b, vga_hsync_in => hs, vga_vsync_in => vs,
-      vga_disp_ena_in => de, tmds_c0_p_out => tmds_d_p(0), tmds_c0_n_out => tmds_d_n(0),
-      tmds_c1_p_out => tmds_d_p(1), tmds_c1_n_out => tmds_d_n(1), tmds_c2_p_out => tmds_d_p(2),
-      tmds_c2_n_out => tmds_d_n(2), tmds_ck_p_out => tmds_ck_p, tmds_ck_n_out => tmds_ck_n);
+    clk_pix => clk_pix, line_t => line_t, line_f => line_f, h_tx => h_tx, v_tx => v_tx, r => r, g => g, b => b, hs => hs, vs => vs, de => de);
+  -- HDMI with 48 kHz stereo audio (FULL => false: DVI, picture only)
+  u_haud : entity work.hdmi_audio
+    port map (clk => clk, left => ul, right => ur, req => audio_req, audio => haudio);
+  u_tx : entity work.hdmi_tx generic map (FULL => true)
+    port map (clk => clk_pix, h_cnt => unsigned(h_tx), v_cnt => unsigned(v_tx), hs => hs, vs => vs, de => de,
+      rgb => r & g & b, audio_req => audio_req, audio => haudio, q0 => tq0, q1 => tq1, q2 => tq2);
+  u_phy : entity work.hdmi_phy
+    port map (clk_135 => clk135, clk_pix => clk_pix, lock => lock_h, q0 => tq0, q1 => tq1, q2 => tq2,
+      tmds_c0_p => tmds_d_p(0), tmds_c0_n => tmds_d_n(0), tmds_c1_p => tmds_d_p(1), tmds_c1_n => tmds_d_n(1),
+      tmds_c2_p => tmds_d_p(2), tmds_c2_n => tmds_d_n(2), tmds_ck_p => tmds_ck_p, tmds_ck_n => tmds_ck_n);
 
   process(clk)
   begin
@@ -200,8 +202,8 @@ begin
     end if;
   end process;
   u_uart : entity work.uart_report
-    generic map (TPL => "PCE FRAME=## BAD=## LOCK=# MISS=####" & CR & LF, NNIB => 9, CLKS_PER_BIT => 188, PERIOD_BITS => 24)
-    port map (clk => clk, snap => dbg1 & dbg2 & "000" & lk(1) & std_logic_vector(nmiss), tx => uart_tx);
+    generic map (TPL => "PCE HSW=## HDS=## LOCK=# HDW.VDS=####" & CR & LF, NNIB => 9, CLKS_PER_BIT => 188, PERIOD_BITS => 24)
+    port map (clk => clk, snap => vdbg(31 downto 16) & "000" & lk(1) & vdbg(15 downto 0), tx => uart_tx);
 
   -- x 2 with saturation, first-order sigma-delta DAC
   process(clk)

@@ -1,6 +1,9 @@
 --
 -- vce.vhd : HuC6260. Line / frame timing, dot clock and the 512 x 9 palette.
--- clk = 21.6 MHz: 1368 clk per line, 262 lines (60.27 Hz). Dot = clk / 4, / 3, / 2.
+-- clk = 21.6 MHz: 1368 clk per line, 262 lines. Dot = clk / 4, / 3, / 2.
+-- The HDMI raster is the master (59.94 Hz): the last clk of a line waits for a
+-- change of line_t (every 1372.8 clk); line 18 waits for the one with line_f = 1.
+-- Only the dots stop, the CPU and the PSG go on.
 -- Output: 9-bit colour (GRB) of every dot into a two-line buffer, from clk 128
 -- of the line on (288 / 384 / 576 dots are used), see pce2hdmi.v.
 --
@@ -15,6 +18,8 @@ entity vce is
     a          : in  std_logic_vector(2 downto 0);
     din        : in  std_logic_vector(7 downto 0);
     dout       : out std_logic_vector(7 downto 0);
+    line_t, line_f : in std_logic;                    -- from pce2hdmi (pixel clock)
+    locked     : out std_logic;
     -- timing
     sol        : out std_logic;                       -- first clk of a line
     eol        : out std_logic;                       -- last clk of a line
@@ -44,9 +49,15 @@ architecture rtl of vce is
   signal px  : unsigned(9 downto 0) := (others => '0');
   signal col : std_logic_vector(8 downto 0);
   signal act, fresh : std_logic := '0';
+  signal lt  : std_logic_vector(2 downto 0) := "000";
+  signal go, pulse, lck : std_logic := '0';
+  signal last, ph_end : std_logic;
 begin
-  eol_i <= '1' when hc = 1367 else '0';
-  dot_i <= '1' when (dcl = "00" and ph = 3) or (dcl = "01" and ph = 2) or (dcl(1) = '1' and ph = 1) else '0';
+  last  <= '1' when hc = 1367 else '0';
+  eol_i <= last and go;
+  ph_end <= '1' when (dcl = "00" and ph = 3) or (dcl = "01" and ph = 2) or (dcl(1) = '1' and ph = 1) else '0';
+  dot_i <= ph_end and (go or not last);
+  pulse <= lt(2) xor lt(1);
   sol  <= '1' when hc = 0 else '0';
   eol  <= eol_i;
   dot  <= dot_i;
@@ -55,9 +66,15 @@ begin
   process(clk)
   begin
     if rising_edge(clk) then
-      hc <= hc + 1;
-      ph <= ph + 1;
+      lt <= lt(1 downto 0) & line_t;
+      if last = '0' then hc <= hc + 1; ph <= ph + 1; end if;
       if dot_i = '1' then ph <= "00"; end if;
+      if eol_i = '1' then go <= '0'; end if;
+      if pulse = '1' and (ln /= 18 or line_f = '1') then go <= '1'; end if;
+      if pulse = '1' and line_f = '1' then
+        lck <= '0';
+        if ln = 18 and last = '1' then lck <= '1'; end if;
+      end if;
       if eol_i = '1' then
         hc <= (others => '0'); ph <= "00";
         dcl <= dc;                                    -- the dot clock changes between lines
@@ -67,6 +84,7 @@ begin
     end if;
   end process;
   frame_t <= ft;
+  locked <= lck;
 
   -- palette; the CPU reads in the clk after the display read (a dot has 2 clk or more)
   pwe <= wr and cs when a = "101" else '0';

@@ -33,7 +33,8 @@ entity vdc is
     p_len      : out std_logic_vector(6 downto 0);
     p_din      : out std_logic_vector(15 downto 0);
     p_dout     : in  std_logic_vector(15 downto 0);
-    p_rvalid, p_busy : in std_logic
+    p_rvalid, p_busy : in std_logic;
+    dbg : out std_logic_vector(31 downto 0)
   );
 end entity;
 
@@ -162,6 +163,7 @@ begin
   with cr(12 downto 11) select inc <=
     x"01" when "00", x"20" when "01", x"40" when "10", x"80" when others;
 
+  dbg <= "000" & std_logic_vector(hsw) & '0' & std_logic_vector(hds) & '0' & std_logic_vector(hdw) & std_logic_vector(vds);
   irq <= f_cr or f_or or f_rr or f_ds or f_dv or f_vd;
   busy <= a(1) and (wpend or rpend);
   process(all)
@@ -268,7 +270,7 @@ begin
       nrc := rc + 1;
       if nl = vstart then nrc := to_unsigned(64, 10); end if;
       if ev_end = '1' then
-        ended <= '1'; disp <= '0';
+        ended <= not eol; disp <= '0';                  -- eol: window longer than the line
         rc <= nrc;
         if nrc = rcr and cr(2) = '1' then f_rr <= '1'; end if;
         if nl = vstart then nact <= '1'; first_l <= '1'; vbl <= '0'; end if;

@@ -30,22 +30,33 @@ end entity;
 architecture s of CLKDIV is begin CLKOUT <= '0'; end architecture;
 
 library ieee; use ieee.std_logic_1164.all;
-entity hdmi_module is
-  port (vga_clk_x5, vga_clk, rst : in std_logic; vga_red_in, vga_green_in, vga_blue_in : in std_logic_vector(7 downto 0);
-    vga_hsync_in, vga_vsync_in, vga_disp_ena_in : in std_logic;
-    tmds_c0_p_out, tmds_c0_n_out, tmds_c1_p_out, tmds_c1_n_out, tmds_c2_p_out, tmds_c2_n_out, tmds_ck_p_out, tmds_ck_n_out : out std_logic);
+entity hdmi_phy is
+  port (clk_135, clk_pix, lock : in std_logic; q0, q1, q2 : in std_logic_vector(9 downto 0);
+    tmds_c0_p, tmds_c0_n, tmds_c1_p, tmds_c1_n, tmds_c2_p, tmds_c2_n, tmds_ck_p, tmds_ck_n : out std_logic);
 end entity;
-architecture s of hdmi_module is begin end architecture;
+architecture s of hdmi_phy is begin end architecture;
 
 library ieee; use ieee.std_logic_1164.all; use ieee.numeric_std.all;
 entity pce2hdmi is
   port (clk, we : in std_logic; waddr : in std_logic_vector(10 downto 0); wdata : in std_logic_vector(8 downto 0);
-    div : in std_logic_vector(1 downto 0); frame_t, clk_pix : in std_logic;
-    r, g, b : out std_logic_vector(7 downto 0); hs, vs, de, locked : out std_logic);
+    div : in std_logic_vector(1 downto 0); clk_pix : in std_logic;
+    r, g, b : out std_logic_vector(7 downto 0); hs, vs, de : out std_logic; line_t, line_f : out std_logic := '0';
+    h_tx, v_tx : out std_logic_vector(9 downto 0) := (others => '0'));
 end entity;
 architecture s of pce2hdmi is
+  signal frame_i : std_logic := '0';
 begin
-  r <= x"00"; g <= x"00"; b <= x"00"; hs <= '0'; vs <= '0'; de <= '0'; locked <= '1';
+  r <= x"00"; g <= x"00"; b <= x"00"; hs <= '0'; vs <= '0'; de <= '0';
+  process                                              -- the 262 line pulses of a frame
+  begin
+    for v in 0 to 524 loop
+      if v = 523 or (v mod 2 = 0 and v < 522) then
+        line_t <= not line_t;
+        if v = 523 then line_f <= '1'; frame_i <= not frame_i; else line_f <= '0'; end if;
+      end if;
+      wait for 31777.8 ns;
+    end loop;
+  end process;
   process
     type cf is file of character;
     file f : cf;
@@ -57,8 +68,8 @@ begin
   begin
     loop
       wait until rising_edge(clk);
-      if frame_t /= lastft then
-        lastft := frame_t;
+      if frame_i /= lastft then
+        lastft := frame_i;
         if opened then file_close(f); end if;
         fn(2) := character'val(48 + fr / 100); fn(3) := character'val(48 + fr / 10 mod 10); fn(4) := character'val(48 + fr mod 10);
         fr := fr + 1;

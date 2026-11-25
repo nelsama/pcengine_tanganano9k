@@ -16,8 +16,9 @@
         <File path="src/pce/cart.vhd" type="file.vhdl" enable="1"/>
         <File path="src/pce/psg.vhd" type="file.vhdl" enable="1"/>
         <File path="src/pce/pce_core.vhd" type="file.vhdl" enable="1"/>
-        <File path="src/board/hdmi/hdmi_impl.vhd" type="file.vhdl" enable="1"/>
-        <File path="src/board/hdmi/hdmi_module.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/board/hdmi/hdmi_tx.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/board/hdmi/hdmi_phy.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/board/hdmi_audio.vhd" type="file.vhdl" enable="1"/>
         <File path="src/board/hdmi/tmds_encoder_2.vhd" type="file.vhdl" enable="1"/>
         <File path="src/debug/uart_tx.vhd" type="file.vhdl" enable="1"/>
         <File path="src/debug/uart_report.vhd" type="file.vhdl" enable="1"/>

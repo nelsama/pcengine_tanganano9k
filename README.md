@@ -48,13 +48,14 @@ El timer no se retrasa con los fallos.
 
 - `src/pce/vdc.vhd`: HuC6270 con la VRAM en la PSRAM. `vce.vhd`: HuC6260.
   `pce_core.vhd`: CPU + VDC + VCE. `src/board/pce2hdmi.v`: escalado a 720x480p.
-- `bash sim/run_pce.sh cuadros [rom.pce] [-gPADBTN=1 -gPADAT=10]`: simula e imprime
+- (Roto: `sim/tb_pce.vhd` usa puertos antiguos; usa `run_top.sh`.)
+  `bash sim/run_pce.sh cuadros [rom.pce] [-gPADBTN=1 -gPADAT=10]`: simula e imprime
   imágenes en `build/sim_pce` (unos 20 s por cuadro). Sin ROM usa `sim/vdctest.s`.
 - `bash tools/build.sh`: bitstream `build/pce/impl/pnr/PCE_TN9K.fs`; en el IDE,
   `PCE_TN9K.gprj` (ejecuta antes `tools/build.sh` si mueves el proyecto).
 - De momento arranca `sim/vdctest.s` desde BSRAM: izquierda / derecha cambian el
   scroll, I cambia entre 256, 336 y 512 puntos. Borde gris = VRAM correcta, rojo = error.
-  Mando: Run 85, Select 86, I 35, II 29. UART: cuadros, errores, HDMI enganchado, fallos de caché.
+  Mando: Run 85, Select 86, I 35, II 29.
 - Sin implementar: modos de ancho de acceso de MWR y modos CG de 2 colores.
 
 ## Paso 4: menú y carga desde la SD
@@ -76,6 +77,23 @@ El timer no se retrasa con los fallos.
 - `src/pce/psg.vhd`: PSG del HuC6280 (6 canales, ruido, DDA, LFO), estéreo, por los
   pines 77 (L) y 76 (R) con el filtro RC del Master System. Prueba: `sim/tb_psg.vhd`.
   Confirmado en la placa (2026-11-23): imagen, carga de juegos y sonido.
+
+## HDMI con audio
+
+- 720x480p estándar (858 x 525, 59,94 Hz), identificación de formato y audio estéreo de
+  48 kHz (`src/board/hdmi/`, `hdmi_audio.vhd`). El HDMI manda: el VCE espera al final de
+  cada línea (`vce.vhd`); la CPU y el sonido no se paran. Los pines 77 y 76 siguen activos.
+- Solo imagen (monitores DVI): `FULL => false` en `pce_top.vhd`.
+- `bash sim/hdmi/run.sh` (GHDL y Node): receptor aparte; `malos 0`, audio `bad: 0`, L y R distintos.
+- Guía original: `docs/09-HDMI-COMPLETO.md`.
+- Placa, 2026-11-24: imagen y sonido correctos en un monitor (Street Fighter II y otros).
+  Sin comprobar: que L y R salgan en su lado, y teles.
+- **Sin resolver:** la primera compilación mostró Street Fighter II desplazado, con rayas y
+  colores mal. La siguiente lo muestra bien, pero se desconoce la causa (colocación de la
+  lógica o carga puntual). De paso se corrigió en `vdc.vhd` que una ventana más larga que la
+  línea perdiera la línea siguiente. Si reaparece al recompilar, compara con un bitstream bueno.
+- UART: registros del VDC, `HSW`, `HDS`, `HDW.VDS`, y `LOCK` (consola y HDMI enganchados).
+- Recursos: 62 % de lógica, 79 % de CLS, 24 de 26 BSRAM, 0 violaciones de timing.
 
 ## Partidas guardadas
 

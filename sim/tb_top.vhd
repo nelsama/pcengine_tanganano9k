@@ -5,7 +5,7 @@ entity tb_top is
   generic (FRAMES : integer := 12; PRESS : integer := 8; S2AT : integer := 999);
 end entity;
 architecture s of tb_top is
-  constant F : time := 16.59 ms;
+  constant F : time := 16.6833 ms;
   signal ck, csn, rwds, ckn, rst : std_logic_vector(1 downto 0);
   signal dq : std_logic_vector(15 downto 0);
   signal sck, cmd, cs, dat : std_logic;

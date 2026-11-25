@@ -3,7 +3,7 @@
 set -euo pipefail
 GW_SH=${GW_SH:-/c/Gowin/Gowin_V1.9.12.03_x64/IDE/bin/gw_sh.exe}
 W=$(cd "$(dirname "$0")/.." && pwd -W); O=$W/build/pce; mkdir -p "$O"; cd "$O"
-VHD="src/board/gw_rpll src/memory/psram_burst src/pce/sdp_ram src/pce/huc6280 src/pce/rom_cache src/pce/cpu_sys src/pce/vdc src/pce/vce src/pce/cart src/pce/psg src/pce/pce_core src/board/hdmi/hdmi_impl src/board/hdmi/hdmi_module src/board/hdmi/tmds_encoder_2 src/debug/uart_tx src/debug/uart_report src/board/pce_top"
+VHD="src/board/gw_rpll src/memory/psram_burst src/pce/sdp_ram src/pce/huc6280 src/pce/rom_cache src/pce/cpu_sys src/pce/vdc src/pce/vce src/pce/cart src/pce/psg src/pce/pce_core src/board/hdmi/tmds_encoder_2 src/board/hdmi/hdmi_tx src/board/hdmi/hdmi_phy src/board/hdmi_audio src/debug/uart_tx src/debug/uart_report src/board/pce_top"
 {
   echo "set_device GW1NR-LV9QN88PC6/I5 -device_version C"
   for f in $VHD; do echo "add_file -type vhdl {$W/$f.vhd}"; done

@@ -28,7 +28,10 @@ entity pce_core is
     pix_color  : out std_logic_vector(8 downto 0);
     pix_div    : out std_logic_vector(1 downto 0);
     frame_t    : out std_logic;
+    line_t, line_f : in std_logic;                    -- from the HDMI raster
+    locked     : out std_logic;
     miss       : out std_logic;
+    dbg        : out std_logic_vector(31 downto 0);
     p0_read    : out std_logic;
     p0_addr    : out std_logic_vector(21 downto 0);
     p0_len     : out std_logic_vector(6 downto 0);
@@ -80,10 +83,11 @@ begin
     port map (clk => clk, reset => reset, cs => vdc_cs, wr => wr, rd => rd, a => ba(1 downto 0), din => bd,
       dout => vdc_q, busy => vbusy, irq => irq1, sol => sol, eol => eol, dot => dot, line => line,
       dotclk => dotclk, pa => pa, memclk => memclk, p_read => p1_read, p_write => p1_write, p_addr => p1_addr,
-      p_len => p1_len, p_din => p1_din, p_dout => p1_dout, p_rvalid => p1_rvalid, p_busy => p1_busy);
+      p_len => p1_len, p_din => p1_din, p_dout => p1_dout, p_rvalid => p1_rvalid, p_busy => p1_busy, dbg => dbg);
 
   u_vce : entity work.vce
     port map (clk => clk, reset => reset, cs => vce_cs, wr => wr, rd => rd, a => ba(2 downto 0), din => bd,
       dout => vce_q, sol => sol, eol => eol, dot => dot, line => line, dotclk => dotclk, pa => pa,
-      pix_we => pix_we, pix_addr => pix_addr, pix_color => pix_color, pix_div => pix_div, frame_t => frame_t);
+      pix_we => pix_we, pix_addr => pix_addr, pix_color => pix_color, pix_div => pix_div, frame_t => frame_t,
+      line_t => line_t, line_f => line_f, locked => locked);
 end architecture;
